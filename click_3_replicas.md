@@ -1,5 +1,5 @@
-### Кластер Clickhouse из трёх реплик с одним шардом
-# 1. Кроме трёх нод самого clickhouse понадобится ещё кластер zookeeper, установленный отдельно, но в рамках теста у меня zookeeper на этих же трёх нодах.
+# Кластер Clickhouse из трёх реплик с одним шардом
+### 1. Кроме трёх нод самого clickhouse понадобится ещё кластер zookeeper, установленный отдельно, но в рамках теста у меня zookeeper на этих же трёх нодах.
 1.1. Соответственно,на всех трёх нодах ставим java:
 ```
 sudo apt install default-jre
@@ -92,7 +92,7 @@ sudo systemctl start zookeeper
 ```
 /usr/local/zookeeper/bin/zkCli.sh -server localhost:2181 get /zookeeper/config
 ```
-# 2. На всех нодах записываем хостнеймы трёх нод в /etc/hosts:
+### 2. На всех нодах записываем хостнеймы трёх нод в /etc/hosts:
 ```
 cat /etc/hosts
 127.0.0.1 localhost
@@ -109,14 +109,14 @@ ff02::2 ip6-allrouters
 192.168.56.102 node2
 192.168.56.103 node3
 ```
-# 3. Устанавливаем на всех трёх нодах clickhouse
+### 3. Устанавливаем на всех трёх нодах clickhouse
 ```
 curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | sudo gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee     /etc/apt/sources.list.d/clickhouse.list
 sudo apt-get update
 sudo apt-get install -y clickhouse-server clickhouse-client
 ```
-# 4. Создаём в /etc/clickhouse-server/config.d файл конфигурации. У меня он выглядит вот так:
+### 4. Создаём в /etc/clickhouse-server/config.d файл конфигурации. У меня он выглядит вот так:
 ```
 user@node1:~$ sudo cat /etc/clickhouse-server/config.d/remote_servers.xml
 [sudo] password for user: 
@@ -179,17 +179,17 @@ user@node1:~$ sudo cat /etc/clickhouse-server/config.d/remote_servers.xml
     <shard>01</shard>
 </macros>
 ```
-# 5. Запускаем clickhouse-server
+### 5. Запускаем clickhouse-server
 ```
 sudo systemctl start clickhouse-server
 ```
-# 6. Создаём реплицированную таблицу, что-нибудь в неё вставляем и проверяем, что вставилось:
+### 6. Создаём реплицированную таблицу, что-нибудь в неё вставляем и проверяем, что вставилось:
 ```
 CREATE TABLE replica_test ON CLUSTER 'default' (`a` String) ENGINE = ReplicatedMergeTree('/clickhouse/shard_{shard}/{database}/{table}', '{replica}') ORDER BY a
 INSERT INTO replica_test (*) VALUES ('test')
 SELECT * FROM replica_test
 ```
-# 7. Проверить статус репликации можно вот так:
+### 7. Проверить статус репликации можно вот так:
 ```
 SELECT *
 FROM system.replicas
@@ -197,12 +197,12 @@ WHERE table = 'replica_test'
 FORMAT Vertical
 ```
 Параметры total_replicas и active_replicas должны быть равны 3, а в параметре replica_is_active должны быть перечислены три реплики. Ещё можно посмотреть на параметр is_leader. У меня версия 24.2.1 и лидеры - все три ноды.
-# 8. Проверяем на остальных двух нодах, что там появилась реплицированная таблица и в ней есть запись:
+### 8. Проверяем на остальных двух нодах, что там появилась реплицированная таблица и в ней есть запись:
 ```
 show tables
 SELECT * FROM replica_test
 ```
-# 9. Останавливаем на первой ноде службу clickhouse-server. После этого на других двух нодах по-прежнему доступны вставка и чтение, а при запуске службы на первой ноде, на ней подтягиваются изменения.
+### 9. Останавливаем на первой ноде службу clickhouse-server. После этого на других двух нодах по-прежнему доступны вставка и чтение, а при запуске службы на первой ноде, на ней подтягиваются изменения.
 
 
 
