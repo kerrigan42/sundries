@@ -51,7 +51,7 @@ commit;
 BEGIN;
 set transaction isolation level repeatable read;
 ```
-В первой сессии добавить новую запись:
+В первой сессии добавляем новую запись:
 ```
 insert into persons(first_name, second_name) values('sveta', 'svetova');
 ```
