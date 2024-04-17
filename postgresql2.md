@@ -29,5 +29,5 @@ sudo docker run --name pg-server --network postgres -e POSTGRES_PASSWORD=postgre
 ```
 Развернём контейнер с клиентом postgres:
 ```
-sudo docker run -it --network postgres --name pg-client postgres:15 psql -h pg-server -U postgres
+sudo docker run --name pg-client --network postgres -e POSTGRES_PASSWORD=postgres -d postgres:15
 ```
