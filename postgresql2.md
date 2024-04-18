@@ -31,3 +31,32 @@ sudo docker run --name pg-server --network postgres -e POSTGRES_PASSWORD=postgre
 ```
 sudo docker run --name pg-client --network postgres -e POSTGRES_PASSWORD=postgres -d postgres:15
 ```
+Подключимся из контейнера с клиентом к контейнеру с сервером и сделаем таблицу с парой строк. При подключении будет запрошен пароль. Пароль "postgres", мы установили его при помощи переменной POSTGRES_PASSWORD, когда запускали контейнер с сервером :
+```
+sudo docker exec -it pg-client /bin/bash
+psql -h pg-server -U postgres 
+create table persons(id serial, first_name text, second_name text);
+insert into persons(first_name, second_name) values('ivan', 'ivanov');
+insert into persons(first_name, second_name) values('petr', 'petrov');
+exit
+exit
+```
+Проверим подключение к контейнеру с сервером с другого хоста. Для этого на хосте предварительно должен быть установлен пакет postgresql-client:
+```
+psql -h 192.168.56.101 -U postgres
+```
+Вернёмся на хост, где развёрнут контейнер с сервером и удалим его:
+```
+sudo docker rm -f pg-server
+```
+Cоздадим его заново:
+```
+sudo docker run --name pg-server --network postgres -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 -v /var/lib/postgres:/var/lib/postgresql/data postgres:15
+```
+Подключится снова из контейнера с клиентом к контейнеру с сервером и проверим, что данные остались на месте:
+```
+sudo docker exec -it pg-client /bin/bash
+psql -h pg-server -U postgres 
+select * from persons;
+```
+Видим, что таблица и две записи, которые мы создавали, на месте, потому что мы монитруем в контейнер волюм /var/lib/postgres для хранения персистентных данных, которые не удаляются при удалении контейнера.
