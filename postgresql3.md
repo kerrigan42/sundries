@@ -46,7 +46,7 @@ sudo mv /var/lib/postgresql/15/mnt/data
 sudo -u postgres pg_ctlcluster 15 main start
 ```
 Кластер не запускается с ошибкой __Error: /var/lib/postgresql/15/main is not accessible or does not exist__. 
-Что ожидаемо, поскольку судя по выводу команды ```sudo -u postgres pg_lsclusters``` кластер ожидает, что данные хранятся по пути /var/lib/postgresql/15/main, но мы их переместили в /mnt/data. Поэтому теперь для запуска нужно поменять в конфигурационном файле путь директории для хранения данных. Для этого в конфигурационном файле /etc/postgresql/15/main/postgresql.conf меняем значение параметра __data_directory___ с _/var/lib/postgresql/15/main_ на _/mnt/data/15/main_.
+Что ожидаемо, поскольку судя по выводу команды ```sudo -u postgres pg_lsclusters``` кластер ожидает, что данные хранятся по пути /var/lib/postgresql/15/main, но мы их переместили в /mnt/data. Поэтому теперь для запуска нужно поменять в конфигурационном файле путь директории для хранения данных. Для этого в конфигурационном файле /etc/postgresql/15/main/postgresql.conf меняем значение параметра __data_directory__ с _/var/lib/postgresql/15/main_ на _/mnt/data/15/main_.
 Пробуем запустить кластер ещё раз. Теперь видим, что кластер запустился и в списке кластеров его путь хранения данных теперь указан как _/mnt/data/15/main_ .
 Зайдём через psql и проверим, что таблица test, которую мы создали ранее, существует и содержит данные:
 ```
