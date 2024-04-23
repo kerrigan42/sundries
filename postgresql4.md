@@ -75,3 +75,9 @@ REVOKE ALL on DATABASE testdb FROM public;
 ```
 create table t3(c1 integer);
 ```
+Результат выполнения команды:
+```
+testdb=> create table t3(c1 integer);
+ERROR:  permission denied for schema public
+LINE 1: create table t3(c1 integer);
+```
