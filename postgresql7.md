@@ -46,3 +46,4 @@ user@ubuntu1:~$ sudo tail -n 10 /var/log/postgresql/postgresql-15-main.log
 2024-04-23 17:22:28.161 UTC [4836] postgres@postgres CONTEXT:  while updating tuple (0,1) in relation "accounts"
 2024-04-23 17:22:28.161 UTC [4836] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
 ```
+Смоделируем ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах. 
