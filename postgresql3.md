@@ -69,8 +69,27 @@ sudo rm -rf /var/lib/postgresql/*
 /dev/disk/by-uuid/2f003b45-3d27-4176-a841-792e02412f30 /var/lib/postgresql ext4 defaults 0 1
 ```
 uuid диска в каждой системе будет отличатся. 
-Перезагружаемся и запускаем кластер postgres. 
+Перезагружаемся и запускаем кластер postgres:
+```
+sudo pg_ctlcluster 15 main start
+```
+Проверим, что он запустился:
+```
+sudo -u postgres pg_lsclusters
+```
+В выводе __Status__ _online_. 
 Затем проверяем, что таблица test существует и содержит одну строку.
+```
+sudo -u postgres psql
+select * from test;
+```
+Вывод:
+```
+ c1 
+----
+ 1
+(1 row)
+```
 
 
 
