@@ -90,4 +90,62 @@ AND (locktype != 'relation' OR relation = 'accounts'::regclass);
 Во второй сессии номер процесса 973 и касательно этого процесса, мы видим, что он так же исключительно блокирует номер своей транзакции и строку в таблице accounts, потому что в этой сессии транзакция тоже ещё не закрыта и тоже происходит обновление строки. Кроме того, в этой транзакции есть ещё исключительная блокировка версии строки. Версию строки ранее блокировала транзакция в первой сессии, но она её уже отпустила, и блокировку версии строки захватила транзакция во второй сессии, но увидела, что эта строка сейчас заблокирована и поэтому нельзя прописать свой собственный xmax, и пока xmax не пропишет, блокировку версии строки не отпустит. И ещё транзакция ожидает получение блокировки типа transactionid в режиме ShareLock для первой транзакции, но пока что она эту блокировку не получает(granted = f).
 Что касается третьей транзакции с номером процесса 1033, то она тоже хочет поставит исключительную блокировку на номер версии строки, чтобы прописать свой xmax и тоже пока не может. Также есть исключительная блокировка номера транзакции и блокировка строки в таблице accounts. И есть блокировка AccessShareLock на таблицу accounts, которая совместима со всеми остальными блокировками.
 
+Воспроизведём взаимоблокировку трех транзакций. Для этого сначала во всех трёх сессиях завершим начатые транзакции и откроем новые:
+```
+COMMIT;
+BEGIN;
+```
+Теперь блокируем в первой сессии первую строку, во второй сессии - вторую строку, а в третьей - третью:
+Первая сессия:
+```
+UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+```
+Вторая сессия:
+```
+UPDATE accounts SET amount = amount - 50.00 WHERE acc_no = 2;
+```
+Третья сессия:
+```
+UPDATE accounts SET amount = amount - 10.00 WHERE acc_no = 3;
+```
+И теперь делаем так, чтобы первая сессия зависела от второй, вторая - от третьей, а третья - от первой:
+Первая сессия:
+```
+UPDATE accounts SET amount = amount + 50.00 WHERE acc_no = 2;
+```
+Вторая сессия:
+```
+UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 3;
+```
+Третья сессия:
+```
+UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+```
+В третьей сессии возникает циклическое ожидание, которое никогда не завершится само по себе. Транзакция, не получив доступ к ресурсу, инициирует проверку взаимоблокировки и обрывается сервером:
+```
+postgres=*# UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+ERROR:  deadlock detected
+DETAIL:  Process 1033 waits for ShareLock on transaction 742; blocked by process 902.
+Process 902 waits for ShareLock on transaction 743; blocked by process 973.
+Process 973 waits for ShareLock on transaction 744; blocked by process 1033.
+HINT:  See server log for query details.
+CONTEXT:  while updating tuple (0,8) in relation "accounts"
+```
+Попробуем разобраться в ситуации постфактум, изучая журнал сообщений /var/log/postgresql/postgresql-15-main.log:
+```
+2024-04-24 09:13:56.459 UTC [1033] postgres@postgres ERROR:  deadlock detected
+2024-04-24 09:13:56.459 UTC [1033] postgres@postgres DETAIL:  Process 1033 waits for ShareLock on transaction 742; blocked by process 902.
+	Process 902 waits for ShareLock on transaction 743; blocked by process 973.
+	Process 973 waits for ShareLock on transaction 744; blocked by process 1033.
+	Process 1033: UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+	Process 902: UPDATE accounts SET amount = amount + 50.00 WHERE acc_no = 2;
+	Process 973: UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 3;
+2024-04-24 09:13:56.459 UTC [1033] postgres@postgres HINT:  See server log for query details.
+2024-04-24 09:13:56.459 UTC [1033] postgres@postgres CONTEXT:  while updating tuple (0,8) in relation "accounts"
+2024-04-24 09:13:56.459 UTC [1033] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+2024-04-24 09:13:56.459 UTC [973] postgres@postgres LOG:  process 973 acquired ShareLock on transaction 744 after 31396.632 ms
+2024-04-24 09:13:56.459 UTC [973] postgres@postgres CONTEXT:  while updating tuple (0,3) in relation "accounts"
+2024-04-24 09:13:56.459 UTC [973] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 3;
+```
+Здесь видно, что была обнаружена ситуация deadlock, и здесь же есть детализированное сообщение о том, какой процесс каким другим процессом был заблокирован, и что происходило в каждом процессе.
 
