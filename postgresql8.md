@@ -74,33 +74,3 @@ tps = 2729.611916 (without initial connection time)
 ```
 tps после тюнинга стал почти в 20 раз больше.
 
-### Провернём упражнение со звёздочкой ###
-Для чистоты эксперимента протестируем кластер ещё утилитой https://github.com/Percona-Lab/sysbench-tpcc
-Сначала установим утилиту https://github.com/akopytov/sysbench:
-```
-curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | sudo bash
-sudo apt -y install sysbench
-```
-Создадим пользователя и базу данных для теста:
-```
-sudo -u postgres psql
-CREATE USER test WITH PASSWORD 'test';
-CREATE DATABASE test;
-ALTER DATABASE test OWNER TO test;
-\q
-exit
-```
-Клонируем репозиторий с бенчмарком и переходим в директорию с ним:
-```
-git clone https://github.com/Percona-Lab/sysbench-tpcc.git
-cd sysbench-tpcc
-```
-Запустим скрипт подготовки таблиц и данных:
-```
-./tpcc.lua --pgsql-user=test --time=60 --threads=2 --report-interval=10 --tables=10 --scale=100 --db-driver=pgsql --pgsql-password=test --pgsql-host=localhost --pgsql-db=test prepare
-```
-И подождём примерно вечность, пока данные нагенерятся. 
-```
-./tpcc.lua --pgsql-user=test --time=60 --threads=2 --report-interval=10 --tables=10 --scale=100 --db-driver=pgsql --pgsql-password=test --pgsql-host=localhost --pgsql-db=test run
-
-
