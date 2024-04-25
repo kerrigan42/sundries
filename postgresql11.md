@@ -1,11 +1,13 @@
 ### Работа с индексами ###
-Создадим индекс к таблице с тектовыми данными.
-Сначала создадим таблицу статей с каким-нибудь текстом:
+Установим и запустим PostgreSQL 15:
 ```
 sudo apt update && sudo apt upgrade -y -q && sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - && sudo apt-get update && sudo apt -y install postgresql-15
 sudo pg_ctlcluster 15 main start
+```
+Создадим таблицу статей с текстовыми данными:
+```
 sudo -u postgres psql
-CREATE TABLE articles (id SERIAL PRIMARY KEY, title TEXT, content TEXT);индекса
+CREATE TABLE articles (id SERIAL PRIMARY KEY, title TEXT, content TEXT);
 INSERT INTO articles (title, content) VALUES
 ('Как инженеры GitHub используют GitHub Copilot: 4 способа', 'Узнаем, как GitHub Copilot повышает эффективность работы инженеров из GitHub, позволяя автоматизировать повторяющиеся задачи, сохранять концентрацию и многое другое.'),
 ('Кратко про микросервисы на Scala и Erlang', 'В статье рассмотрим два языка программирования, которые выделяются своим функциональным подходом и широким применением в микросервисной архитектуре: Scala и Erlang.'),
@@ -17,3 +19,8 @@ INSERT INTO articles (title, content) VALUES
 ('Обеспечение безопасности загрузчика GRUB в Linux', 'В данной статье мы рассмотрим шаги по обеспечению безопасности загрузчика GRUB, начиная с генерации зашифрованного пароля и заканчивая его внедрением в систему.'),
 ('Async iterator timeout в Python', 'Представим следующую задачу: у нас есть микросервисная архитектура, в которой сервисы взаимодействуют через брокер сообщений, или через gRPC.'),
 ('Деплоим приложение в k8s через Jenkins+Helm3+ArgoCD', 'В этой статье мы рассмотрим каждый из этих инструментов и покажем, как объединить их в единую систему для создания надежного и автоматизированного процесса развертывания приложений в Kubernetes.');
+```
+Создадим индекс к таблице с тектовыми данными:
+create index title_index on articles(title);
+
+
