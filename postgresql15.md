@@ -3,9 +3,8 @@
 ubuntu1 - 192.168.56.101
 ubuntu2 - 192.168.56.102
 ubuntu3 - 192.168.56.103.
-И ещё две ВМ для etcd и haproxy:
+И ещё ВМ для etcd:
 etcd - 192.168.56.104
-haproxy - 192.168.56.105
 
 Устанавливаем PostgreSQL 16 и пакеты, необходимые для построения кластера, на ВМ 1, 2, 3:
 ```
@@ -18,7 +17,7 @@ namespace: /db/
 name: ubuntu1
 
 restapi:
-    listen: 0.0.0.0:8008
+    listen: 192.168.56.101:8008
     connect_address: 192.168.56.101:8008
 
 etcd:
@@ -52,7 +51,7 @@ bootstrap:
         - createdb
 
 postgresql:
-  listen: 0.0.0.0:5432
+  listen: 192.168.56.101:5432
   connect_address: 192.168.56.101:5432
   data_dir: /data/patroni
   pgpass: /tmp/pgpass
@@ -119,7 +118,15 @@ ETCD_ENABLE_V2="true"
 ```
 sudo systemctl restart etcd
 ```
-Устанавливаем haproxy на ВМ 5:
+После этого, если всё прошло без ошибок, статус кластера должен выглядеть так:
 ```
-sudo apt -y install haproxy
+dmi@node1:~$ patronictl -c /etc/patroni.yml list
++ Cluster: postgres (6871178537652191317) ---+----+--------------+
+| Member | Host             | Role    | State   | TL | Lag in MB |
++--------+------------------+---------+---------+----+-----------+
+| ubuntu1  | 192.168.56.101 | Replica | running |  2 |         0 |
+| ubuntu2  | 192.168.56.102 | Leader  | running |  2 |           |
+| ubuntu3  | 192.168.56.103 | Replica | running |  2 |         0 |
++--------+---------------+---------+---------+----+--------------+
 ```
+
